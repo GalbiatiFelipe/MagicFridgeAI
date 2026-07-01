@@ -7,13 +7,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
-
-    @Value("${chatgpt.api.url}")
+    @Value("${openai.api.url}")
     private String openAiUrl;
 
-    @Bean
-    public WebClient webClient(WebClient.Builder builder) {
-        return builder.baseUrl(openAiUrl).build();
-    }
+    @Value("${openai.api.key}")
+    private String openAiApiKey;
 
+    @Bean
+    public WebClient openAiWebClient() {
+        // Criando o builder manualmente com WebClient.builder()
+        // em vez de pedir para o Spring injetá-lo no método
+        return WebClient.builder()
+                .baseUrl(openAiUrl)
+                .defaultHeader("Authorization", "Bearer " + openAiApiKey)
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
 }
