@@ -42,10 +42,10 @@ public class ChatGptService {
     public Mono<String> generateRecipe() {
         String prompt = "Me sugira uma receita simples com ingredientes comuns";
         Map requestBody = Map.of(
-                "model", "gpt-5",
+                "model", "gpt-5.5",
                 "reasoning", Map.of("effort", "low"), //define baixo esforço de raciocínio,reduz latência e custo
                 "input", List.of(
-                        Map.of("role", "system","content", "Você é um assistente que cria receitas"),
+                        Map.of("role", "developer","content", "Você é um assistente que cria receitas"),
                         Map.of("role", "user", "content", prompt)
                 )
         );
@@ -57,10 +57,24 @@ public class ChatGptService {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {
-                    var choices = (List<Map<String, Object>>) response.get("choices");
-                    if (choices != null && !choices.isEmpty()) {
-                        Map<String, Object> input = (Map<String, Object>) choices.get(0);
-                        return input.get("content").toString();
+                    // CORREÇÃO 1: Na nova API, o nó principal se chama "output" (e não mais "choices")
+                    var output = (List<Map<String, Object>>) response.get("output");
+
+                    if (output != null && !output.isEmpty()) {
+                        // Pegamos o primeiro bloco do output
+                        Map<String, Object> firstOutput = output.get(0);
+
+                        // CORREÇÃO 2: O texto não fica direto no primeiro nível, ele fica dentro de "content" que é outra lista
+                        var contentList = (List<Map<String, Object>>) firstOutput.get("content");
+
+                        if (contentList != null && !contentList.isEmpty()) {
+                            // Varre a lista de conteúdos para achar o tipo "output_text"
+                            for (Map<String, Object> contentItem : contentList) {
+                                if ("output_text".equals(contentItem.get("type"))) {
+                                    return contentItem.get("text").toString();
+                                }
+                            }
+                        }
                     }
                     return "Nenhuma receita foi gerada.";
                 });
